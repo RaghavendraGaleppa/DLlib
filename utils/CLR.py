@@ -49,6 +49,8 @@ class CyclicLR(Callback):
             K.set_value(self.model.optimizer.lr, self.clr())
 
     def on_batch_end(self, epoch, logs=None):
+        logs = logs or {}
+
         self.current_iteration += 1
         K.set_value(self.model.optimizer.lr, self.clr())
 
@@ -59,6 +61,9 @@ class CyclicLR(Callback):
         self.history.setdefault(
             'iterations',[]
         ).append(self.current_iteration)
+
+        for k, v in logs.items():
+            self.history.setdefault(k, []).append(v)
 
     def plot_lr(self):
         fig,ax = plt.subplots()
