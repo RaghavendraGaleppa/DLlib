@@ -71,6 +71,20 @@ class CyclicLR(Callback):
         ax.set_xlabel('Iterations')
         ax.set_ylabel('learning rate')
         plt.show()
+
+    def plot_lr_loss(self):
+        ''' Plots lr vs loss '''
+        loss = np.array(self.history['loss'])
+        nan = loss[-1]
+        idxs = np.where(loss < 4)
+        lr = np.array(self.history['lr'])[idxs]
+        f_loss = loss[idxs]
+        print(f_loss.max())
+        plt.semilogx(lr,f_loss)
+
+    def plot_lr_acc(self):
+        ''' Plots lr vs accuracy '''
+        plt.semilogx(self.history['lr'], self.history['acc'])
         
 
 def test():
