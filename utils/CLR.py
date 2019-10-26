@@ -65,6 +65,13 @@ class CyclicLR(Callback):
         for k, v in logs.items():
             self.history.setdefault(k, []).append(v)
 
+    def on_epoch_end(self,epoch, logs={}):
+        ''' Store validation loss and validation accuracy for each epoch '''
+        if('val_acc' in logs.keys()):
+            self.history.setdefault('val_acc', []).append(logs['val_acc'])
+        if('val_loss' in logs.keys()):
+            self.history.setdefault('val_loss', []).append(logs['val_loss'])
+
     def plot_lr(self):
         fig,ax = plt.subplots()
         ax.plot(self.history['iterations'],self.history['lr'])
@@ -72,11 +79,10 @@ class CyclicLR(Callback):
         ax.set_ylabel('learning rate')
         plt.show()
 
-    def plot_lr_loss(self):
+    def plot_lr_loss(self, loss_threshold=100):
         ''' Plots lr vs loss '''
         loss = np.array(self.history['loss'])
-        nan = loss[-1]
-        idxs = np.where(loss < 4)
+        idxs = np.where(loss < loss_threshold)
         lr = np.array(self.history['lr'])[idxs]
         f_loss = loss[idxs]
         print(f_loss.max())
@@ -85,7 +91,52 @@ class CyclicLR(Callback):
     def plot_lr_acc(self):
         ''' Plots lr vs accuracy '''
         plt.semilogx(self.history['lr'], self.history['acc'])
-        
+
+
+    def plot_train_loss_acc(self, loss_threshold=10):
+        ''' Plots lr, training loss and acc all in the same plot '''
+        fig,ax1 = plt.subplots(figsize=(6,6)) 
+        loss = np.array(self.history['loss'])
+        idxs = np.where(loss < loss_threshold)
+        f_lr = np.array(self.history['lr'])[idxs]
+        f_loss = loss[idxs]
+        f_acc = np.array(self.history['acc'])[idxs]
+
+        ax1.semilogx(f_lr,f_loss, c='red', label='training loss')
+        ax1.set_xlabel('learning rate', fontsize=16)
+        ax1.set_ylabel('training loss', fontsize=16)
+        ax1.legend()
+
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('training accuracy', fontsize=16)
+        ax2.semilogx(f_lr, f_acc, c='blue', label='training accuracy')
+        ax2.legend()
+
+        plt.show()
+    
+    def plot_val_loss_acc(self, loss_threshold=10):
+        ''' Plots validation loss and accuracy for every epoch '''
+        fig,ax1 = plt.subplots(figsize=(6,6)) 
+        loss = np.array(self.history['val_loss'])
+        idxs = np.where(loss < loss_threshold)
+        f_loss = loss[idxs]
+        f_acc = np.array(self.history['val_acc'])[idxs]
+        epochs = list(range(1,len(f_loss)+1))
+
+        ax1.plot(epochs, f_loss, c='red', label='validation loss')
+        ax1.set_xlabel('epochs', fontsize=16)
+        ax1.set_ylabel('validation loss', fontsize=16)
+        ax1.legend()
+
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('validation accuracy', fontsize=16)
+        ax2.plot(epochs, f_acc, c='blue', label='validation accuracy')
+        ax2.legend()
+
+        plt.show()
+
+
+
 
 def test():
     ''' Test the working of the cycling learning rate '''
@@ -93,7 +144,11 @@ def test():
     inputs = tf.keras.layers.Input((10,))
     d1 = tf.keras.layers.Dense(2,activation='softmax')(inputs)
     model = tf.keras.Model(inputs=inputs,outputs=d1)
-    model.compile(loss='mse')
+    model.compile(loss='mse',metrics=['acc'])
     X_train, y_test = np.random.randn(50000,10), np.random.randint(0,2,size=(50000,2))
-    hist = model.fit(X_train,y_test,batch_size=32,epochs=10,callbacks=[clr])
-    clr.plot_lr()
+    hist = model.fit(X_train,y_test,batch_size=32,epochs=5,callbacks=[clr],validation_split=0.3)
+    clr.plot_val_loss_acc()
+    print(clr.history.keys())
+
+if __name__ == '__main__':
+    test()
