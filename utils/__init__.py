@@ -1,4 +1,5 @@
 import sys
 sys.path.append('../')
-from utils.CLR import *
-from utils.SGDR import *
+
+from .CLR import CyclicLR
+from .SGDR import SGDRestart
