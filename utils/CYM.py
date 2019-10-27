@@ -5,16 +5,16 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-class CyclicLR(Callback):
+class CyclicMomentum(Callback):
 
-    ''' This is CyclicLR package designed for tensorflow 2.
+    ''' This is Cyclic Momentum package designed for tensorflow 2.
         Reference is taken from : 
-        It only does traingular CyclicLR
+        
     '''
 
-    def __init__(self, base_lr=0.001, max_lr=0.006, step_size=2000, test_data=None, monitor_val=0):
+    def __init__(self, base_lr=0.95, max_lr=0.85, step_size=2000):
 
-        super(CyclicLR,self).__init__()
+        super(CyclicMomentum,self).__init__()
         self.base_lr = base_lr
         self.max_lr = max_lr
         self.step_size = step_size
@@ -24,10 +24,6 @@ class CyclicLR(Callback):
         self.epoch_stats = {}
         # Batch stats will hold val_acc and val_loss for every batch end, if test_data is given
         self.batch_stats = {}
-
-        self.test_data = test_data
-        # If monitor_val is 1, then val_loss and acc will be calculated every iteration
-        self.monitor_val = monitor_val
 
 
     def local_cycle(self):
@@ -63,11 +59,11 @@ class CyclicLR(Callback):
         logs = logs or {}
 
         self.current_iteration += 1
-        K.set_value(self.model.optimizer.lr, self.clr())
+        K.set_value(self.model.optimizer.momentum, self.clr())
 
         self.history.setdefault(
             'lr',[]
-        ).append(K.get_value(self.model.optimizer.lr))
+        ).append(K.get_value(self.model.optimizer.momentum))
 
         self.history.setdefault(
             'iterations',[]
@@ -76,11 +72,6 @@ class CyclicLR(Callback):
         for k, v in logs.items():
             self.history.setdefault(k, []).append(v)
 
-
-        if(self.monitor_val == 1 and self.test_data != None):
-            val_loss, val_acc = self.model.evaluate(self.test_data, verbose=0)
-            self.batch_stats.setdefault('val_loss', []).append(val_loss)
-            self.batch_stats.setdefault('val_acc', []).append(val_acc)
 
     def on_epoch_end(self,epochs, logs={}):
         ''' Store validation loss and validation accuracy for each epoch '''
@@ -202,15 +193,15 @@ class CyclicLR(Callback):
 
 def test():
     ''' Test the working of the cycling learning rate '''
-    clr = CyclicLR()
+    clr = CyclicMomentum(step_size=100)
     inputs = tf.keras.layers.Input((10,))
     d1 = tf.keras.layers.Dense(2,activation='softmax')(inputs)
     model = tf.keras.Model(inputs=inputs,outputs=d1)
     model.compile(loss='mse',metrics=['acc'])
     X_train, y_test = np.random.randn(10000,10), np.random.randint(0,2,size=(10000,2))
-    hist = model.fit(X_train,y_test,batch_size=1,epochs=2,callbacks=[clr],validation_data=(X_train,y_test))
+    hist = model.fit(X_train,y_test,batch_size=32,epochs=2,callbacks=[clr],validation_data=(X_train,y_test))
     print('data' in dir(model))
-    #clr.plot_lr_loss()
+    clr.plot_lr()
     print(model.evaluate(X_train, y_test,verbose=0))
 
 if __name__ == '__main__':
