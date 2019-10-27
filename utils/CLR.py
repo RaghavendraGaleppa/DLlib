@@ -1,6 +1,6 @@
-import tensorflow as tf 
-from tensorflow.keras.callbacks import Callback
-from tensorflow.keras import backend as  K
+import tensorflow_core as tf 
+from tensorflow_core.keras.callbacks import Callback
+from tensorflow_core.keras import backend as  K
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,6 +19,8 @@ class CyclicLR(Callback):
         self.step_size = step_size
         self.current_iteration = 0
         self.history = {}
+        # epoch_stats will hold the data that is available at the end of an epoch
+        self.epoch_stats = {}
 
     def local_cycle(self):
         ''' local_cycle refers to the current cycle we are in based on epoch_counter '''
@@ -65,12 +67,13 @@ class CyclicLR(Callback):
         for k, v in logs.items():
             self.history.setdefault(k, []).append(v)
 
-    def on_epoch_end(self,epoch, logs={}):
+    def on_epoch_end(self,epochs, logs={}):
         ''' Store validation loss and validation accuracy for each epoch '''
-        if('val_acc' in logs.keys()):
-            self.history.setdefault('val_acc', []).append(logs['val_acc'])
-        if('val_loss' in logs.keys()):
-            self.history.setdefault('val_loss', []).append(logs['val_loss'])
+        logs = logs or None
+
+        self.epoch_stats.setdefault('epochs', []).append(epochs+1)
+        for k, v in logs.items():
+            self.epoch_stats.setdefault(k,[]).append(v)
 
     def plot_lr(self):
         fig,ax = plt.subplots()
@@ -117,11 +120,11 @@ class CyclicLR(Callback):
     def plot_val_loss_acc(self, loss_threshold=10):
         ''' Plots validation loss and accuracy for every epoch '''
         fig,ax1 = plt.subplots(figsize=(6,6)) 
-        loss = np.array(self.history['val_loss'])
+        loss = np.array(self.epoch_stats['val_loss'])
         idxs = np.where(loss < loss_threshold)
         f_loss = loss[idxs]
-        f_acc = np.array(self.history['val_acc'])[idxs]
-        epochs = list(range(1,len(f_loss)+1))
+        f_acc = np.array(self.epoch_stats['val_acc'])[idxs]
+        epochs = np.array(self.epoch_stats['epochs'])[idxs]
 
         ax1.plot(epochs, f_loss, c='red', label='validation loss')
         ax1.set_xlabel('epochs', fontsize=16)
