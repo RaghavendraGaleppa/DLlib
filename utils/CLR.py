@@ -12,7 +12,7 @@ class CyclicLR(Callback):
         It only does traingular CyclicLR
     '''
 
-    def __init__(self, base_lr=0.001, max_lr=0.006, step_size=2000):
+    def __init__(self, base_lr=0.001, max_lr=0.006, step_size=2000, test_data=None, monitor_val=0):
         super(CyclicLR,self).__init__()
         self.base_lr = base_lr
         self.max_lr = max_lr
@@ -21,6 +21,13 @@ class CyclicLR(Callback):
         self.history = {}
         # epoch_stats will hold the data that is available at the end of an epoch
         self.epoch_stats = {}
+        # Batch stats will hold val_acc and val_loss for every batch end, if test_data is given
+        self.batch_stats = {}
+
+        self.test_data = test_data
+        # If monitor_val is 1, then val_loss and acc will be calculated every iteration
+        self.monitor_val = monitor_val
+
 
     def local_cycle(self):
         ''' local_cycle refers to the current cycle we are in based on epoch_counter '''
@@ -45,6 +52,7 @@ class CyclicLR(Callback):
     def on_train_begin(self, logs):
         ''' Settings to set up at the beginning of the training '''
 
+
         if self.current_iteration == 0:
             K.set_value(self.model.optimizer.lr, self.base_lr)
         else:
@@ -67,6 +75,12 @@ class CyclicLR(Callback):
         for k, v in logs.items():
             self.history.setdefault(k, []).append(v)
 
+
+        if(self.monitor_val == 1 and self.test_data != None):
+            val_loss, val_acc = self.model.evaluate(self.test_data, verbose=0)
+            self.batch_stats.setdefault('val_loss', [])[val_loss]
+            self.batch_stats.setdefault('val_acc', [])[val_acc]
+
     def on_epoch_end(self,epochs, logs={}):
         ''' Store validation loss and validation accuracy for each epoch '''
         logs = logs or None
@@ -82,18 +96,43 @@ class CyclicLR(Callback):
         ax.set_ylabel('learning rate')
         plt.show()
 
-    def plot_lr_loss(self, loss_threshold=100):
+    def plot_lr_loss(self, metric='train', loss_threshold=100):
         ''' Plots lr vs loss '''
-        loss = np.array(self.history['loss'])
-        idxs = np.where(loss < loss_threshold)
-        lr = np.array(self.history['lr'])[idxs]
-        f_loss = loss[idxs]
-        print(f_loss.max())
-        plt.semilogx(lr,f_loss)
+        lr = []
+        f_loss = []
+        if(metric == 'train'):
+            loss = np.array(self.history['loss'])
+            idxs = np.where(loss < loss_threshold)
+            lr = np.array(self.history['lr'])[idxs]
+            f_loss = loss[idxs]
+        elif(metric == 'val'):
+            loss = np.array(self.batch_stats['val_loss'])
+            idxs = np.where(loss < loss_threshold)
+            lr = np.array(self.history['lr'])[idxs]
+            f_loss = loss[idxs]
 
-    def plot_lr_acc(self):
+        fig,ax = plt.subplots(figsize=(7,7))
+        ax.semilogx(lr, f_loss)
+        ax.set_xlabel('learning rate',fontsize=16)
+        ax.set_ylabel(f"{metric} loss", fontsize=16)
+
+        plt.show()
+
+    def plot_lr_acc(self, metric='train'):
         ''' Plots lr vs accuracy '''
-        plt.semilogx(self.history['lr'], self.history['acc'])
+        acc = []
+        lr = self.history['lr']
+        if(metric == 'train'):
+            acc = self.history['acc']
+        elif(metric == 'val'):
+            acc = self.batch_stats['val_acc']
+
+        fig,ax = plt.subplots(figsize=(7,7))
+        ax.semilogx(lr, acc)
+        ax.set_xlabel('learning rate',fontsize=16)
+        ax.set_ylabel(f"{metric} acc", fontsize=16)
+
+        plt.show()
 
 
     def plot_train_loss_acc(self, loss_threshold=10):
@@ -142,10 +181,10 @@ class CyclicLR(Callback):
         ''' This function plots generalization error i.e, (train_loss - val_loss)'''
         train_loss = np.array(self.epoch_stats['loss'])
         val_loss = np.array(self.epoch_stats['val_loss'])
+        generalization_error = val_loss - train_loss
         epochs = np.array(self.epoch_stats['epochs'])
 
         fig,ax = plt.subplots(figsize=(7,7))
-        generalization_error = train_loss - val_loss
         if(show_loss == True):
             ax.plot(epochs, train_loss, label='train_loss', c='r')
             ax.plot(epochs, val_loss, label='val_loss', c='b')
@@ -167,11 +206,11 @@ def test():
     d1 = tf.keras.layers.Dense(2,activation='softmax')(inputs)
     model = tf.keras.Model(inputs=inputs,outputs=d1)
     model.compile(loss='mse',metrics=['acc'])
-    X_train, y_test = np.random.randn(50000,10), np.random.randint(0,2,size=(50000,2))
-    hist = model.fit(X_train,y_test,batch_size=32,epochs=2,callbacks=[clr],validation_split=0.3)
-    clr.plot_generalization_error(show_loss=False)
-    print(clr.history.keys())
-    print(clr.epoch_stats.keys())
+    X_train, y_test = np.random.randn(10000,10), np.random.randint(0,2,size=(10000,2))
+    hist = model.fit(X_train,y_test,batch_size=1,epochs=2,callbacks=[clr],validation_data=(X_train,y_test))
+    print('data' in dir(model))
+    #clr.plot_lr_loss()
+    print(model.evaluate(X_train, y_test,verbose=0))
 
 if __name__ == '__main__':
     test()
