@@ -11,14 +11,14 @@ import matplotlib.pyplot as plt
 
 class SGDR(keras.callbacks.Callback):
 
-    def __init__(self,min_lr=0.001,max_lr=0.006,step_size=1000):
+    def __init__(self,base_lr=0.001,max_lr=0.006,step_size=1000):
         '''
             min_lr, lowest point of the learning rate
             max_lr, the starting point of the learning rate
             step_size, the number of iterations after which a restart should happen
         '''
         super().__init__()
-        self.min_lr = min_lr
+        self.min_lr = base_lr
         self.max_lr = max_lr
         self.max_iter = step_size
         self.curr_iter = 0 
