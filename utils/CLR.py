@@ -78,8 +78,8 @@ class CyclicLR(Callback):
 
         if(self.monitor_val == 1 and self.test_data != None):
             val_loss, val_acc = self.model.evaluate(self.test_data, verbose=0)
-            self.batch_stats.setdefault('val_loss', [])[val_loss]
-            self.batch_stats.setdefault('val_acc', [])[val_acc]
+            self.batch_stats.setdefault('val_loss', []).append(val_loss)
+            self.batch_stats.setdefault('val_acc', []).append(val_acc)
 
     def on_epoch_end(self,epochs, logs={}):
         ''' Store validation loss and validation accuracy for each epoch '''
