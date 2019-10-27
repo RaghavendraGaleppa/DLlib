@@ -34,4 +34,5 @@ def plot_cyclic_lr(base_lr=0.001, max_lr=0.006, step_size=2000, total_iterations
     ax.set_ylabel('leraning rate')
     plt.show()
 
-plot_cyclic_lr()
+if __name__ == "__main__":
+    plot_cyclic_lr()
