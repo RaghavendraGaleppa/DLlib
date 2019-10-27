@@ -9,7 +9,7 @@ from tensorflow_core.keras import backend as K
 import numpy as np
 import matplotlib.pyplot as plt
 
-class SGDR(keras.callbacks.Callback):
+class SGDRestart(keras.callbacks.Callback):
 
     def __init__(self,base_lr=0.001,max_lr=0.006,step_size=1000):
         '''
@@ -124,7 +124,7 @@ class SGDR(keras.callbacks.Callback):
 
 def test():
     ''' Test the working of the SGDR learning rate '''
-    clr = SGDR()
+    clr = SGDRestart()
     inputs = tf.keras.layers.Input((10,))
     d1 = tf.keras.layers.Dense(2,activation='softmax')(inputs)
     model = tf.keras.Model(inputs=inputs,outputs=d1)
