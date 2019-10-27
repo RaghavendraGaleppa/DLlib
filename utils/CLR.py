@@ -138,6 +138,25 @@ class CyclicLR(Callback):
 
         plt.show()
 
+    def plot_generalization_error(self,show_loss=True):
+        ''' This function plots generalization error i.e, (train_loss - val_loss)'''
+        train_loss = np.array(self.epoch_stats['loss'])
+        val_loss = np.array(self.epoch_stats['val_loss'])
+        epochs = np.array(self.epoch_stats['epochs'])
+
+        fig,ax = plt.subplots(figsize=(7,7))
+        generalization_error = train_loss - val_loss
+        if(show_loss == True):
+            ax.plot(epochs, train_loss, label='train_loss', c='r')
+            ax.plot(epochs, val_loss, label='val_loss', c='b')
+        ax.plot(epochs, generalization_error, label='generalization_error', c='g')
+
+        ax.set_xlabel('epochs', fontsize=16)
+        ax.set_ylabel('error/loss', fontsize=16)
+
+        ax.legend()
+        plt.show()
+
 
 
 
@@ -149,9 +168,10 @@ def test():
     model = tf.keras.Model(inputs=inputs,outputs=d1)
     model.compile(loss='mse',metrics=['acc'])
     X_train, y_test = np.random.randn(50000,10), np.random.randint(0,2,size=(50000,2))
-    hist = model.fit(X_train,y_test,batch_size=32,epochs=5,callbacks=[clr],validation_split=0.3)
-    clr.plot_val_loss_acc()
+    hist = model.fit(X_train,y_test,batch_size=32,epochs=2,callbacks=[clr],validation_split=0.3)
+    clr.plot_generalization_error(show_loss=False)
     print(clr.history.keys())
+    print(clr.epoch_stats.keys())
 
 if __name__ == '__main__':
     test()
