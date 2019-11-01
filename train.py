@@ -3,11 +3,13 @@ import tensorflow as tf
 import numpy as np
 import time
 
+@tf.function
 def loss(model, x, y):
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     y_ = model(x)
     return loss_object(y_true=y, y_pred=y_)
 
+@tf.function
 def grad(model, inputs, targets):
     with tf.GradientTape() as tape:
         loss_value = loss(model, inputs, targets)
