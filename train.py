@@ -35,7 +35,7 @@ def acc(model, dataset):
     return loss_, acc_
 
 
-def train(model, train_dataset, test_dataset, epochs=1, vb=4):
+def train(model, train_dataset, test_dataset, epochs=1, vb=4, steps_per_epoch=390):
     optimizer = tf.keras.optimizers.SGD(lr=0.01, decay=0, momentum=0.9, nesterov=True)
 
     num_epochs = epochs
@@ -45,6 +45,7 @@ def train(model, train_dataset, test_dataset, epochs=1, vb=4):
         for i, (x, y) in enumerate(train_dataset):
             loss_value, grads = grad(model, x, y)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
+            print(f"{i}/{steps_per_epoch}")
         
         if(epoch%vb == 0):
             loss_, acc_ = acc(model, test_dataset)
