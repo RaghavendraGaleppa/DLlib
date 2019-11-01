@@ -4,3 +4,4 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 import utils
+from .train import train
