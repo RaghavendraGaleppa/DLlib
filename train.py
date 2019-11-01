@@ -43,9 +43,9 @@ def train(model, train_dataset, test_dataset, epochs=1, vb=4, steps_per_epoch=39
     t = time.time()
     for epoch in range(num_epochs):
         for i, (x, y) in enumerate(train_dataset):
+            print(f"{i}/{steps_per_epoch}")
             loss_value, grads = grad(model, x, y)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
-            print(f"{i}/{steps_per_epoch}")
         
         if(epoch%vb == 0):
             loss_, acc_ = acc(model, test_dataset)
