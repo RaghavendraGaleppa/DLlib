@@ -1,6 +1,4 @@
 import tensorflow as tf
-print(f"Tensorflow version: {tf.__version__}")
-print(f"Eager Excevution: {tf.executing_eagerly()}")
     
 import numpy as np
 import time
