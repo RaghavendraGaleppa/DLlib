@@ -49,11 +49,14 @@ class CyclicLR(_LRScheduler):
         """
         cycle = math.floor(1 + self.last_epoch/(2*self.stepsize))
         x = abs(self.last_epoch/self.stepsize - 2*cycle + 1)
-        scale_factor = (self.max_lr - self.base_lr)* max(0,(1-x))
+        base_height = (self.max_lr - self.base_lr)* max(0,(1-x))
         if self.mode == 'exp':
-            scale_factor = self.gamma ** scale_factor
+            scale_factor = self.gamma ** cycle
+        else:
+            scale_factor = 1
             pass
-        lr = self.base_lr + scale_factor
+        
+        lr = self.base_lr + base_height * scale_factor
         lrs = []
         for i in self.optimizer.param_groups:
             lrs.append(lr)
@@ -69,13 +72,16 @@ def lr_range_test(
     stepsize=2000,
     max_iter=2000,
     device='cuda',
-    log_plot='true'):
+    validate=False,
+    log_plot='true',
+
+    ):
 
     cyclic_lr = CyclicLR(optimizer,base_lr,max_lr,stepsize)
     model = model.to(device)
-    losses = []
-    lrs = []
-    accuracy = []
+    train_losses = []
+    train_lrs = []
+    train_accuracy = []
     t = tqdm(range(max_iter))
     for i in t:
         optimizer.zero_grad()
@@ -96,6 +102,8 @@ def lr_range_test(
                       accuracy=round(accuracy[-1],2),
                       lr=optimizer.param_groups[0]['lr'],)
 
+        if validate == True:
+            data
     
     try:
         fig,ax = plt.subplots(2)
